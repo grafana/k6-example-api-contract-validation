@@ -1,10 +1,11 @@
 import { crocodileAPIContract } from './crocodile_service/objects/Crocodile.js'
 import { crocodileListAPIcontract } from './crocodile_service/endpoints/croc_list.js'
+import { registerAPIcontract, registerAPIResponseContract } from './authentication_service/endpoints/register.js'
 
-console.log(JSON.stringify(crocodileAPIContract))
-console.log(JSON.stringify(crocodileListAPIcontract))
 
 export {
   crocodileAPIContract,
   crocodileListAPIcontract,
+  registerAPIcontract,
+  registerAPIResponseContract,
 }

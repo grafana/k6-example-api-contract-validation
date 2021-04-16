@@ -1,13 +1,16 @@
-import { describe } from 'https://jslib.k6.io/expect/0.0.4/index.js';
+import { describe } from './expect.js';
 import { Httpx, Get } from 'https://jslib.k6.io/httpx/0.0.4/index.js';
 import { randomString } from "https://jslib.k6.io/k6-utils/1.0.0/index.js";
-import { crocodileAPIContract, crocodileListAPIcontract } from './api_contracts/contracts.js'
+
+import { 
+  registerAPIcontract,
+  crocodileAPIContract, 
+  crocodileListAPIcontract,
+  registerAPIResponseContract } from './api_contracts/contracts.js'
 
 
-if(!crocodileAPIContract)
-throw("No contract", crocodileAPIContract)
-if(!crocodileListAPIcontract)
-throw("No contract", crocodileListAPIcontract)
+import Ajv from 'https://jslib.k6.io/ajv/6.12.5/index.js';
+
 
 export let options = {
   thresholds: {
@@ -18,9 +21,6 @@ export let options = {
   vus: 1,
   iterations: 1,
 };
-
-const USERNAME = `user_${randomString(10)}@example.com`;  
-const PASSWORD = 'superCroc2019';
 
 let session = new Httpx();
 session.setBaseUrl('https://test-api.k6.io');
@@ -43,15 +43,42 @@ function validateContractsCrocodileService(){
   describe('[Crocs service] Fetch list of crocs', (t) => {
     let response = session.get('/public/crocodiles');
 
-      t.expect(response.status).as("response status").toEqual(200)
-        .and(response).toHaveValidJson() 
-        .and(response.json()).as("Croc List schema").toMatchAPISchema(crocodileListAPIcontract)
+    t.expect(response.status).as("response status").toEqual(200)
+      .and(response).toHaveValidJson() 
+      .and(response.json()).as("Croc List schema").toMatchAPISchema(crocodileListAPIcontract)
   })
+}
+
+function validateAuthService(){
+
+  describe("[Auth service] user registration", (t) => {
+
+    const USERNAME = `${randomString(10)}@example.com`; 
+    const PASSWORD = 'superCroc2021';
+
+    let sampleUser = {
+      'username': USERNAME,
+      'password': PASSWORD,
+      'email': USERNAME,
+      'first_name': 'John',
+      'last_name': 'Smith'
+    };
+
+    t.expect(sampleUser).as("user registration").toMatchAPISchema(registerAPIcontract);
+
+    let response = session.post(`/user/register/`, sampleUser);
+
+    console.log(response.body)
+
+    t.expect(response.status).toEqual(201);
+    t.expect(response).toHaveValidJson();
+    t.expect(response.json()).as("registration response").toMatchAPISchema(registerAPIResponseContract);
+  });
 
 }
 
 export default function testSuite() {
   validateContractsCrocodileService();
-
+  validateAuthService();
 }
 
