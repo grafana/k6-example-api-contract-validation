@@ -1,4 +1,4 @@
-import { describe } from './expect.js';
+import { describe } from 'https://jslib.k6.io/expect/0.0.5/index.js';
 import { Httpx, Get } from 'https://jslib.k6.io/httpx/0.0.4/index.js';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.0.0/index.js';
 
@@ -110,7 +110,7 @@ function validateContractCreateCrocodileService(){
       .and(resp.json()).toMatchAPISchema(crocodileAPIContract);
 
     session.newCrocId = resp.json('id'); // caching croc ID for the future.
-  })
+  });
 
   describe('[Croc service] Fetch private crocs', (t) => {
     let response = session.get('/my/crocodiles/');
