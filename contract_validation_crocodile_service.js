@@ -1,16 +1,14 @@
 import { describe } from './expect.js';
 import { Httpx, Get } from 'https://jslib.k6.io/httpx/0.0.4/index.js';
-import { randomString } from "https://jslib.k6.io/k6-utils/1.0.0/index.js";
+import { randomString } from 'https://jslib.k6.io/k6-utils/1.0.0/index.js';
 
 import { 
   registerAPIcontract,
   crocodileAPIContract, 
   crocodileListAPIcontract,
-  registerAPIResponseContract } from './api_contracts/contracts.js'
-
-
-import Ajv from 'https://jslib.k6.io/ajv/6.12.5/index.js';
-
+  registerAPIResponseContract,
+  tokenAuthResponseAPIcontract,
+  tokenAuthRequestAPIcontract} from './api_contracts/contracts.js'
 
 export let options = {
   thresholds: {
@@ -25,7 +23,7 @@ export let options = {
 let session = new Httpx();
 session.setBaseUrl('https://test-api.k6.io');
 
-function validateContractsCrocodileService(){
+function validateContractsPublicCrocodileService(){
 
   describe('[Crocs service] Fetch public crocs', (t) => {
     let responses = session.batch([
@@ -51,11 +49,10 @@ function validateContractsCrocodileService(){
 
 function validateAuthService(){
 
-  describe("[Auth service] user registration", (t) => {
+  const USERNAME = `${randomString(10)}@example.com`;
+  const PASSWORD = 'superCroc2021';
 
-    const USERNAME = `${randomString(10)}@example.com`; 
-    const PASSWORD = 'superCroc2021';
-
+  describe("[Registration service] user registration", (t) => {
     let sampleUser = {
       'username': USERNAME,
       'password': PASSWORD,
@@ -68,17 +65,68 @@ function validateAuthService(){
 
     let response = session.post(`/user/register/`, sampleUser);
 
-    console.log(response.body)
-
     t.expect(response.status).toEqual(201);
     t.expect(response).toHaveValidJson();
     t.expect(response.json()).as("registration response").toMatchAPISchema(registerAPIResponseContract);
   });
 
+  describe("[Auth service] user authentication", (t) => {
+    let authData = {
+      username: USERNAME,
+      password: PASSWORD
+    };
+
+    t.expect(authData).as("Auth data payload").toMatchAPISchema(tokenAuthRequestAPIcontract);
+
+    let resp = session.post(`/auth/token/login/`, authData);
+
+    t.expect(resp.status).as("Auth status").toBeBetween(200, 204)
+      .and(resp).toHaveValidJson()
+      .and(resp.json()).as("Auth response").toMatchAPISchema(tokenAuthResponseAPIcontract) // did they reply with the right format?
+      .and(resp.json('access')).as("auth token").toBeTruthy();
+
+    let authToken = resp.json('access');
+    // set the authorization header on the session for the subsequent requests.
+    session.addHeader('Authorization', `Bearer ${authToken}`);
+
+  });
+}
+
+
+function validateContractCreateCrocodileService(){
+  // authentication happened before this call.
+
+  describe('[Croc service] Create a new crocodile', (t) => {
+    let payload = {
+      name: `Croc Name`,
+      sex: "M",
+      date_of_birth: '2019-01-01',
+    };
+
+    let resp = session.post(`/my/crocodiles/`, payload);
+
+    t.expect(resp.status).as("Croc creation status").toEqual(201)
+      .and(resp).toHaveValidJson()
+      .and(resp.json()).toMatchAPISchema(crocodileAPIContract);
+
+    session.newCrocId = resp.json('id'); // caching croc ID for the future.
+  })
+
+  describe('[Croc service] Fetch private crocs', (t) => {
+    let response = session.get('/my/crocodiles/');
+
+    t.expect(response.status).as("response status").toEqual(200)
+      .and(response).toHaveValidJson()
+      .and(response).toMatchAPISchema(crocodileListAPIcontract)
+      .and(response.json().length).as("number of crocs").toEqual(1);
+  })
+
+
 }
 
 export default function testSuite() {
-  validateContractsCrocodileService();
+  validateContractsPublicCrocodileService();
   validateAuthService();
+  validateContractCreateCrocodileService();
 }
 

@@ -81,7 +81,6 @@ class Funk {
     let is_valid = validate(data, schema);
     let name = this.leftHandValueName || '';
 
-
     check(is_valid, {
       [`${name} schema validation`]: (is_valid) => is_valid
     });
@@ -95,7 +94,9 @@ class Funk {
           [`${name} ${error.dataPath} ${error.message}`]: (is_valid) => is_valid
         });
       });
+      this._breakTheChain();
     }
+
 
     return this;
   }

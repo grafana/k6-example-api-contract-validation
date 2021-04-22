@@ -3,6 +3,6 @@
 import { crocodileAPIContract } from '../objects/Crocodile.js'
 
 export const crocodileListAPIcontract = {
-  "items": crocodileAPIContract
+  "items": crocodileAPIContract // reusing object from another contract
 };
 
