@@ -1,6 +1,6 @@
 # k6 API contract validation example
 
-This is a complete example of API contract validation in k6 using the `expect` library.
+This is a complete example of API contract validation in k6 using the [expect](https://k6.io/docs/javascript-api/jslib/expect/) library.
 
 Contracts are stored in [./api_contracts](./api_contracts) folder as `.js` files.
 Contracts can also be standard `.json` files if there's no need to compose complex contracts from multiple objects.
